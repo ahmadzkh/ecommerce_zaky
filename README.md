@@ -48,6 +48,10 @@ pip install -r requirements.txt
 ```bash
 streamlit run Dashboard/dashboard.py
 ```
+atau buka secara online
+```bash
+https://dicoding-ecommercezaky.streamlit.app
+```
 
 # 📌 Fitur Dashboard
 - Visualisasi data transaksi Ecommerce
