@@ -45,7 +45,7 @@ def remove_outliers(df, columns):
     return df_cleaned
 
 datetime_cols = [
-    "order_purchase_timestamp",
+    "order_date",
     "order_approved_at",
     "order_delivered_carrier_date",
     "order_delivered_customer_date",
