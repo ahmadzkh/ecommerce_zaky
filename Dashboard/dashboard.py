@@ -128,7 +128,7 @@ if analysis_type == "Daily Order & Revenue":
 elif analysis_type == "Monthly Order Trends":
     st.subheader("Monthly Order Trends")
 
-    all_df_filtered['month_year'] = all_df_filtered['order_purchase_timestamp'].dt.to_period('M')
+    all_df_filtered['month_year'] = all_df_filtered['order_date'].dt.to_period('M')
 
     monthly_df = all_df_filtered.groupby('month_year')['order_id'].count().reset_index()
     monthly_df.rename(columns={'order_id': 'order_count'}, inplace=True)
@@ -168,7 +168,7 @@ elif analysis_type == "Customer Segmentation Based on RFM":
     st.subheader("Customer Segmentation Based on RFM")
 
     all_df_filtered['total_price'] = all_df_filtered['price'] * all_df_filtered['order_item_id']
-    all_df_filtered.rename(columns={'order_purchase_timestamp': 'order_date'}, inplace=True)
+    all_df_filtered.rename(columns={'order_date': 'order_date'}, inplace=True)
 
     rfm_df = all_df_filtered.groupby(by="customer_id", as_index=False).agg({
         "order_date": "max",
