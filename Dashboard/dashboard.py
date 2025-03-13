@@ -52,26 +52,26 @@ datetime_cols = [
     "shipping_limit_date",
     ]
 
-all_df = pd.read_csv(data_path)
-all_df[datetime_cols] = all_df[datetime_cols].apply(pd.to_datetime)
+all_data = pd.read_csv(data_path)
+all_data[datetime_cols] = all_data[datetime_cols].apply(pd.to_datetime)
 
 numeric_columns = ["price", "freight_value", "payment_value", "order_item_id"]
-all_df = remove_outliers(all_df, numeric_columns)
+all_data = remove_outliers(all_data, numeric_columns)
 
 st.sidebar.image(str(logo_path), use_container_width=True, caption="Logo")
 
 start_date, end_date = st.sidebar.date_input(
     "Time Period",
-    [all_df["order_approved_at"].min(), all_df["order_approved_at"].max()],
-    min_value=all_df["order_approved_at"].min(),
-    max_value=all_df["order_approved_at"].max()
+    [all_data["order_approved_at"].min(), all_data["order_approved_at"].max()],
+    min_value=all_data["order_approved_at"].min(),
+    max_value=all_data["order_approved_at"].max()
 )
 
-all_df_filtered = all_df[(all_df["order_approved_at"] >= pd.Timestamp(start_date)) & (all_df["order_approved_at"] <= pd.Timestamp(end_date))]
-all_df_filtered = all_df_filtered.copy()
+all_data_filtered = all_data[(all_data["order_approved_at"] >= pd.Timestamp(start_date)) & (all_data["order_approved_at"] <= pd.Timestamp(end_date))]
+all_data_filtered = all_data_filtered.copy()
 
-daily_orders = all_df_filtered.resample("D", on="order_approved_at").agg({"order_id": "nunique"}).reset_index()
-daily_revenue = all_df_filtered.resample("D", on="order_approved_at").agg({"payment_value": "sum"}).reset_index()
+daily_orders = all_data_filtered.resample("D", on="order_approved_at").agg({"order_id": "nunique"}).reset_index()
+daily_revenue = all_data_filtered.resample("D", on="order_approved_at").agg({"payment_value": "sum"}).reset_index()
 
 total_orders = daily_orders["order_id"].sum()
 total_revenue = format_currency(daily_revenue["payment_value"].sum(), "IDR", locale="id_ID")
@@ -127,19 +127,20 @@ if analysis_type == "Daily Order & Revenue":
 elif analysis_type == "Monthly Order Trends":
     st.subheader("Monthly Order Trends")
 
-    all_df_filtered['month_year'] = all_df_filtered['order_date'].dt.to_period('M')
+    all_data_filtered['month_year'] = all_data_filtered['order_date'].dt.to_period('M')
 
-    monthly_df = all_df_filtered.groupby('month_year')['order_id'].count().reset_index()
+    monthly_df = all_data_filtered.groupby('month_year')['order_id'].count().reset_index()
     monthly_df.rename(columns={'order_id': 'order_count'}, inplace=True)
     monthly_df['month_year'] = monthly_df['month_year'].astype(str)
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.lineplot(data=monthly_df, x='month_year', y='order_count', marker='o', ax=ax)
+    fig = plt.figure(figsize=(10, 5))
+    sns.lineplot(x=monthly_df['month_year'].astype(str), y='order_count', data=monthly_df, marker='o', label='Order Count')
 
-    ax.set_xlabel("Month", fontsize=12)
-    ax.set_ylabel("Number of Orders", fontsize=12)
-    ax.set_title("Monthly Order Trends", fontsize=14)
+    plt.xlabel("Month")
+    plt.ylabel("Number of Orders")
+    plt.title("Monthly Order Trends")
     plt.xticks(rotation=45)
+    plt.legend()
     plt.grid(True)
 
     st.pyplot(fig)
@@ -149,15 +150,14 @@ elif analysis_type == "Monthly Order Trends":
 elif analysis_type == "Most Preferred Payment Method":
     st.subheader("Most Preferred Payment Method")
 
-    payment_counts = all_df_filtered['payment_type'].value_counts().reset_index()
-    payment_counts.columns = ['payment_type', 'order_count']
+    payment_counts = all_data_filtered['payment_type'].value_counts()
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x='payment_type', y='order_count', data=payment_counts, ax=ax)
+    fig = plt.figure(figsize=(10, 5))
+    sns.countplot(x='payment_type', data=all_data_filtered, order=payment_counts.index)
 
-    ax.set_title("Most Preferred Payment Method", fontsize=14)
-    ax.set_xlabel("Payment Method", fontsize=12)
-    ax.set_ylabel("Order Count", fontsize=12)
+    plt.title("Most Preferred Payment Method")
+    plt.xlabel("Payment Method")
+    plt.ylabel("Order Count")
     plt.xticks(rotation=45)
 
     st.pyplot(fig)
@@ -166,10 +166,10 @@ elif analysis_type == "Most Preferred Payment Method":
 elif analysis_type == "Customer Segmentation Based on RFM":
     st.subheader("Customer Segmentation Based on RFM")
 
-    all_df_filtered['total_price'] = all_df_filtered['price'] * all_df_filtered['order_item_id']
-    all_df_filtered.rename(columns={'order_date': 'order_date'}, inplace=True)
+    all_data_filtered['total_price'] = all_data_filtered['price'] * all_data_filtered['order_item_id']
+    all_data_filtered.rename(columns={'order_date': 'order_date'}, inplace=True)
 
-    rfm_df = all_df_filtered.groupby(by="customer_id", as_index=False).agg({
+    rfm_df = all_data_filtered.groupby(by="customer_id", as_index=False).agg({
         "order_date": "max",
         "order_id": "nunique",
         "total_price": "sum"
@@ -177,7 +177,7 @@ elif analysis_type == "Customer Segmentation Based on RFM":
     rfm_df.columns = ["customer_id", "max_order_timestamp", "frequency", "monetary"]
 
     rfm_df["max_order_timestamp"] = rfm_df["max_order_timestamp"].dt.date
-    recent_date = all_df_filtered["order_date"].dt.date.max()
+    recent_date = all_data_filtered["order_date"].dt.date.max()
     rfm_df["recency"] = rfm_df["max_order_timestamp"].apply(lambda x: (recent_date - x).days)
 
     rfm_df.drop("max_order_timestamp", axis=1, inplace=True)
@@ -212,26 +212,25 @@ elif analysis_type == "Customer Segmentation Based on RFM":
 elif analysis_type == "Top Product Categories by Sales Volume":
     st.subheader("Top Product Categories by Sales Volume")
     
-    sales_by_category = all_df_filtered.groupby('product_category_name')['price'].sum().reset_index()
-    sales_by_category.rename(columns={'price': 'total_sales'}, inplace=True)
-    sales_by_category = sales_by_category.sort_values(by='total_sales', ascending=False)
+    category_sales = all_data_filtered.groupby('product_category_name')['order_id'].count().reset_index()
+    category_sales = category_sales.sort_values(by='order_id', ascending=False)
 
     top_n = 10
-    top_categories = sales_by_category.head(top_n)
-    st.dataframe(top_categories)
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    sns.barplot(y=top_categories['product_category_name'], x=top_categories['total_sales'], hue=top_categories["product_category_name"], palette=colors10, ax=ax, legend=False)
-    ax.set_xlabel("Total Sales")
-    ax.set_ylabel("Category Name")
-    ax.set_title(f"Top {top_n} Product Categories by Sales Volume")
+    category_sales = category_sales.head(top_n)
+
+    fig = plt.figure(figsize=(12, 6))
+
+    sns.barplot(y=category_sales['product_category_name'], x=category_sales['order_id'], dodge=False, legend=False)
+    plt.xlabel("Order Count")
+    plt.ylabel("Product Category")
+    plt.title(f"Top {top_n} Product Categories by Sales Volume")
 
     st.pyplot(fig)
 
 elif analysis_type == "Product pricing impact on customer ratings":
     st.subheader("Product Pricing Impact on Customer Ratings")
 
-    price_rating_df = all_df_filtered[["product_id", "price", "review_score"]].dropna()
+    price_rating_df = all_data_filtered[["product_id", "price", "review_score"]].dropna()
 
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.barplot(x="review_score", y="price", data=price_rating_df, ax=ax, hue="review_score", palette=colors5, legend=False)
