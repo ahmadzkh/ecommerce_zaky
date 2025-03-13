@@ -10,7 +10,6 @@ ecommerce_zaky/
 │   ├── dashboard.py
 ├── Data/
 │   ├── customers_dataset.csv
-│   ├── geolocation_dataset.csv
 │   ├── order_items_dataset.csv
 │   ├── order_payments_dataset.csv
 │   ├── order_reviews_dataset.csv
@@ -18,6 +17,7 @@ ecommerce_zaky/
 │   ├── product_category_name_translation.csv
 │   ├── products_dataset.csv
 ├── logo.jpg
+├── notebook_zaky.ipynb
 ├── README.md
 ├── requirements.txt
 └── url.txt
